@@ -1,31 +1,29 @@
 'use strict';
 
 var express = require('express');
-var routes = require('./app/routes/index.js');
-var mongoose = require('mongoose');
-var passport = require('passport');
-var session = require('express-session');
-
 var app = express();
-require('dotenv').load();
-require('./app/config/passport')(passport);
 
-mongoose.connect(process.env.MONGO_URI);
 
-app.use('/controllers', express.static(process.cwd() + '/app/controllers'));
-app.use('/public', express.static(process.cwd() + '/public'));
-app.use('/common', express.static(process.cwd() + '/app/common'));
+function parseLanguage(str){
+    var stopIndex = str.search(",");
+    return str.substr(0,stopIndex);
+}
 
-app.use(session({
-	secret: 'secretClementine',
-	resave: false,
-	saveUninitialized: true
-}));
+function parseSoftware(str){
+    var bracketBegin = str.indexOf('(');
+    var bracketEnd = str.indexOf(')');
+    return str.substr(bracketBegin+1, bracketEnd-bracketBegin-1);
+}
 
-app.use(passport.initialize());
-app.use(passport.session());
+app.get('/api/whoami/', function(req, res){
+    var ip = req.headers['x-forwarded-for'];
+    var language = parseLanguage(req.headers['accept-language']);
+    var software = parseSoftware(req.headers['user-agent']);
+    
+    var sendObject = { "ipadress": ip, "language": language, "software": software};
+    res.end(JSON.stringify(sendObject));
+});
 
-routes(app, passport);
 
 var port = process.env.PORT || 8080;
 app.listen(port,  function () {
